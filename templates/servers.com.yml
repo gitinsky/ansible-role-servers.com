@@ -1,0 +1,5 @@
+#{{ ansible_managed }}
+[servers.com]
+{% for host in servers.json.data %}
+{{ host.title }}
+{% endfor %}

@@ -1,0 +1,11 @@
+- name: get price
+  uri:
+    url: https://portal.servers.com/rest/batch
+    body: '{"ops":[{"method":"GET","url":"/rest/server_models/4","params":{"location_id":1},"headers":{"Content-Type":"application/json"}},{"method":"GET","url":"/rest/server_models/4/ram_upgrades","params":{"location_id":1},"headers":{"Content-Type":"application/json"}},{"method":"GET","url":"/rest/server_uplinks","params":{"server_model_id":4,"location_id":1},"headers":{"Content-Type":"application/json"}},{"method":"GET","url":"/rest/server_public_ips","params":{"location_id":1},"headers":{"Content-Type":"application/json"}},{"method":"GET","url":"/rest/bandwidths","params":{"location_id":1},"headers":{"Content-Type":"application/json"}},{"method":"GET","url":"/rest/os","params":{"server_model_id":4,"location_id":1},"headers":{"Content-Type":"application/json"}}],"sequential":true}'
+    return_content: yes
+    HEADER_Cookie: "{{login.set_cookie}}"
+    HEADER_Content-Type: "application/json"
+    method: POST
+  register: price
+
+- debug: var=price

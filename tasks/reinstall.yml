@@ -1,0 +1,17 @@
+- set_fact:
+    post_data:
+        data: "{{ hostvars[servers_com_reinstall].install_config }}"
+
+- name: request reinstall
+  uri:
+    url: https://portal.servers.com/rest/hosts/{{ hostvars[servers_com_reinstall].servers_com_info.id }}/os_install
+    body: "{{ post_data }}"
+    body_format: json
+    return_content: yes
+    HEADER_Cookie: "{{ login.set_cookie }}"
+    HEADER_Content-Type: "application/json"
+    method: POST
+    status_code: 200,201,301,302
+  register: reinstall
+
+- debug: var=reinstall

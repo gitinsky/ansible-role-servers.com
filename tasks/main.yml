@@ -1,0 +1,55 @@
+- block:
+      
+  - name: login
+    uri:
+      url: https://portal.servers.com/login
+      method: POST
+      body: "redirect_url=&order=&promo_code=&email={{ servers_com_username }}&pwd={{ servers_com_password }}"
+      status_code: 200,201,301,302,401
+      HEADER_Content-Type: "application/x-www-form-urlencoded"
+    register: login
+    ignore_errors: true
+  
+  - debug: var=login
+  
+  - name: Request token if 401
+    pause: prompt="Input token"
+    register: servers_com_token
+    when: login.status == 401
+  
+  - name: input token
+    uri:
+      url: https://portal.servers.com/login
+      method: POST
+      body: "redirect_url=&totp_token={{ servers_com_token.user_input }}"
+      status_code: 200,201,301,302
+      HEADER_Content-Type: "application/x-www-form-urlencoded"
+      HEADER_Cookie: "{{login.set_cookie}}"
+    register: login2f
+    when: login.status == 401
+    ignore_errors: true
+  
+  - name: redefine login if required
+    set_fact:
+        login: "{{ login2f }}"
+    when: not login2f|skipped
+  
+  - debug: var=login
+  
+  - name: if inventorize inventorisation is not planned but we miss facts – enable it
+    set_fact:
+        servers_com_inventorize: yes
+    when: servers_com_reinstall in groups['servers.com'] and hostvars[servers_com_reinstall].install_config is defined and (
+          hostvars[servers_com_reinstall].servers_com_info is not defined
+          or hostvars[servers_com_reinstall].servers_com_info.id is not defined )
+  
+  
+  - include: inventorize.yml
+    when: servers_com_inventorize
+  
+  - include: reinstall.yml
+    when: servers_com_reinstall in groups['servers.com']
+          and hostvars[servers_com_reinstall].servers_com_info.id is defined
+          and hostvars[servers_com_reinstall].install_config is defined
+
+  connection: local

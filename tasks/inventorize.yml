@@ -1,0 +1,89 @@
+- name: get list of servers
+  uri:
+      url: https://portal.servers.com/rest/hosts
+      return_content: yes
+      HEADER_Cookie: "{{ login.set_cookie }}"
+  register: servers
+
+- name: get list of servers
+  uri:
+      url: https://portal.servers.com/rest/hosts
+      return_content: yes
+      HEADER_Cookie: "{{ login.set_cookie }}"
+  register: servers
+
+# - debug: var=servers.json.data
+
+- name: get uplinks for each server
+  uri:
+      url: "https://portal.servers.com/rest/hosts/{{ item[0].id }}/uplinks?flag={{ item[1] }}"
+      return_content: yes
+      HEADER_Cookie: "{{ login.set_cookie }}"
+  register: uplinks_megadict
+  with_nested:
+      - "{{ servers.json.data }}"
+      - "{{ ['public','private'] }}"
+
+- name: create empty uplinks dictionary
+  set_fact:
+      uplinks: {}
+
+# - debug: msg="{{ item.item[1] }}"
+#   with_items: "{{ uplinks_megadict.results }}"
+
+- name: fill uplinks with data
+  set_fact:
+      uplinks: "{{ uplinks|combine({ item.item[0]['id']: { item.item[1]: item.json.data } }, recursive=True) }}"
+  with_items: "{{ uplinks_megadict.results }}"
+
+# - name: show uplinks
+#   debug: msg="{{ uplinks }}"
+
+- name: get inventory path from ansible.cfg
+  set_fact:
+    inventory_path: "{{ lookup('ini', 'hostfile section=defaults file=ansible.cfg') }}"
+
+- name: get info about inventory file
+  stat: path={{ inventory_path }} follow=yes
+  register: inventory_stat
+
+- name: check if inventory is a directory
+  fail: msg="inventory must be a directory"
+  when: not inventory_stat.stat.isdir
+
+# - name: create empty array
+#   set_fact:
+#       servers_com_hosts: []
+#
+# - name: create empty array
+#   set_fact:
+#       servers_com_hosts: "{{ servers_com_hosts|union([item.title]) }}"
+#   with_items: "{{ servers.json.data }}"
+#
+# - set_fact:
+#       servers_com_group: { 'servers.com' : ["{{ servers_com_hosts }}"] }
+
+# json inventory is currently broken: https://github.com/ansible/ansible/issues/14422
+# - name: put all the found hosts to inventory
+#   copy: content={{ servers_com_group|to_nice_json }} dest={{ inventory_path }}/servers.com.json
+# - debug: msg={{ servers_com_group|to_nice_json }}
+
+# ini format is incompatible with ansible inventory...
+# - name: put all the found hosts to inventory
+#   ini_file: dest={{ inventory_path }}/servers.com.yml
+#             section=servers.com
+#             option="{{ item.title }} ini_module_is_compatible_to_inventory"
+#   with_items: "{{ servers.json.data }}"
+
+- name: put all the found hosts to inventory
+  template: src=servers.com.yml dest={{ inventory_path }}/{{ servers_com_inventory_name }}
+
+- name: create host_vars/servername/ if required
+  file: state=directory dest=host_vars/{{ item.title }}
+  with_items: "{{ servers.json.data }}"
+
+- name: fill in host_vars with data
+  template: src=servers_com_info.j2 dest=host_vars/{{ item.title }}/servers_com_info.json
+  with_items: "{{ servers.json.data }}"
+
+- meta: refresh_inventory
