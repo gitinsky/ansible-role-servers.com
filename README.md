@@ -15,8 +15,8 @@ I recommend adding localhost to hosts and running this role on this host:
   gather_facts: no
   roles:
       - role: servers.com
-      servers_com_inventorize: yes
-      servers_com_reinstall: test.example.org
+        servers_com_inventorize: yes
+        servers_com_reinstall: test.example.org
 ```
 
 ## Inventorizing
