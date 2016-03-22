@@ -1,20 +1,21 @@
 {% set servers_com_info={ "servers_com_info": item } %}
+{% set aliases=[] %}
 {% for ip in item.ipv4 %}
-{# uplinks[1159]['private']|to_nice_json #}
-{% if ip.type != 'alias' and servers_com_info.servers_com_info.update({ ip.type: { "ip": ip.ip, "id": ip.id } }) %}
-{% endif %}
-{# , "uplinks": uplinks[servers_com_info.servers_com_info.id][ip.type] #}
-{# {{ servers_com_info.servers_com_info.id }} {{ ip.type }} {{ ip.id }} #}
-{% if loop.last %}
-{% endif %}
+    {%- if ip.type != 'alias' %}
+        {%- if servers_com_info.servers_com_info.update({ ip.type: { "ip": ip.ip, "id": ip.id } }) %}{% endif %}
+    {%- else %}
+        {%- if aliases.append(ip) %}{% endif %}
+    {%- endif %}
 {% endfor %}
 {% if servers_com_info.servers_com_info.private is defined %}
-{% if servers_com_info.update({ "int_ip": servers_com_info.servers_com_info.private.ip } ) %}{% endif %}
+    {%- if servers_com_info.update({ "int_ip": servers_com_info.servers_com_info.private.ip } ) %}{% endif %}
 {% endif %}
 {% if servers_com_info.servers_com_info.public is defined %}
-{% if servers_com_info.update({ "ext_ip": servers_com_info.servers_com_info.public.ip } ) %}{% endif %}
-{% endif %}
+    {%- if servers_com_info.update({ "ext_ip": servers_com_info.servers_com_info.public.ip } ) %}{% endif %}
+{% endif -%}
+
 {{ servers_com_info|combine({ 'servers_com_info': { 
 'private': { "uplinks": uplinks[servers_com_info.servers_com_info.id]['private'] },
-'public':  { "uplinks": uplinks[servers_com_info.servers_com_info.id]['public']  }
+'public':  { "uplinks": uplinks[servers_com_info.servers_com_info.id]['public']  },
+'aliases': aliases
 }}, recursive=True) |to_nice_json }}
