@@ -49,7 +49,5 @@
   
   - include: reinstall.yml
     when: servers_com_reinstall in groups['servers.com']
-          and hostvars[servers_com_reinstall].servers_com_info.id is defined
-          and hostvars[servers_com_reinstall].install_config is defined
 
   connection: local
