@@ -36,6 +36,10 @@
   
   - debug: var=login
   
+  - name: fail if login failed
+    fail: msg="login failed"
+    when: login2f|failed or login|failed
+  
   - name: if inventorize inventorisation is not planned but we miss facts – enable it
     set_fact:
         servers_com_inventorize: yes
